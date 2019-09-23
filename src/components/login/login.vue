@@ -24,20 +24,21 @@ export default {
     };
   },
   methods: {
-      login() {
-          this.$http.post('login', this.formdata).then(res => {
-              const {data, meta: {msg, status}} = res;
+    async login() {
+      const res = await this.$http.post("login", this.formdata);
+      const {
+        data,
+        meta: { msg, status }
+      } = res;
 
-              if(status === 200) {
-                //   this.$router.push({name: 'home'});
-                  this.$message.success(msg);
-              } else {
-
-                this.$message.error(msg);
-              }
-          })
+      if (status === 200) {
+        this.$router.push({ name: "home" });
+        this.$message.success(msg);
+      } else {
+        this.$message.error(msg);
       }
-  },
+    }
+  }
 };
 </script>
 
@@ -52,13 +53,13 @@ export default {
 }
 
 .login-wrap .login-form {
-    width: 420px;
-    background-color: white;
-    border-radius: 4px;
-    padding: 20px;
+  width: 420px;
+  background-color: white;
+  border-radius: 4px;
+  padding: 20px;
 }
 
 .login-wrap .login-btn {
-    width: 100%;
+  width: 100%;
 }
 </style>
