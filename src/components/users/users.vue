@@ -25,6 +25,7 @@
             v-model="userlist.row.mg_state"
             active-color="#13ce66"
             inactive-color="#ff4949"
+            @change="changeStatus(userlist.row)"
           ></el-switch>
         </template>
       </el-table-column>
@@ -38,7 +39,14 @@
             plain
             @click="showEditDialog(data.row)"
           ></el-button>
-          <el-button type="success" icon="el-icon-check" circle size="small" plain></el-button>
+          <el-button
+            type="success"
+            icon="el-icon-check"
+            circle
+            size="small"
+            plain
+            @click="showSelectRoleDlg(data.row)"
+          ></el-button>
           <el-button
             type="danger"
             icon="el-icon-delete"
@@ -85,7 +93,7 @@
     <el-dialog title="编辑用户" :visible.sync="dialogFormVisibleEdit">
       <el-form :model="form">
         <el-form-item label="用户名" label-width="100px">
-          <el-input v-model="form.username" autocomplete="off"></el-input>
+          <el-input v-model="form.username" autocomplete="off" disabled></el-input>
         </el-form-item>
         <el-form-item label="邮箱" label-width="100px">
           <el-input v-model="form.email" autocomplete="off"></el-input>
@@ -97,6 +105,25 @@
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisibleEdit = false">取 消</el-button>
         <el-button type="primary" @click="editUser">确 定</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 选择角色 -->
+    <el-dialog title="收货地址" :visible.sync="showSelectRole">
+      <el-form>
+        <el-form-item label="用户名" label-width="100px">
+          {{ currentUser.username }}
+        </el-form-item>
+        <el-form-item label="角色" label-width="100px">
+          <el-select v-model="currentRoleId" placeholder="请选择角色">
+            <el-option label="请选择" :value="-1"></el-option>
+            <el-option v-for="(item, index) in roles" :label="item.roleName" :value="item.id" :key="index"></el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="showSelectRole = false">取 消</el-button>
+        <el-button type="primary" @click="selectRole">确 定</el-button>
       </div>
     </el-dialog>
   </el-card>
@@ -118,7 +145,11 @@ export default {
         mobile: "",
         email: ""
       },
-      dialogFormVisibleEdit: false
+      dialogFormVisibleEdit: false,
+      showSelectRole: false,
+      currentUser: {},
+      currentRoleId: 0,
+      roles: []
     };
   },
   created() {
@@ -210,8 +241,8 @@ export default {
     },
     async editUser() {
       const res = await this.$http.put("users/" + this.form.id, {
-          mobile: this.form.mobile,
-          email: this.form.email
+        mobile: this.form.mobile,
+        email: this.form.email
       });
       const {
         meta: { status, msg }
@@ -221,6 +252,61 @@ export default {
         this.getUserList();
         this.dialogFormVisibleEdit = false;
         this.form = {};
+      } else {
+        this.$message.warning(msg);
+      }
+    },
+    async changeStatus(user) {
+      const res = await this.$http.put(
+        `users/${user.id}/state/${user.mg_state}`
+      );
+      const {
+        meta: { status, msg }
+      } = res;
+      if (status === 200) {
+        this.$message.success(msg);
+        this.getUserList();
+      } else {
+        this.$message.warning(msg);
+      }
+    },
+    async showSelectRoleDlg(user) {
+      this.currentUser = user;
+
+      const res1 = await this.$http.get('roles');
+           const {data: data1,
+        meta: { status: status1, msg: msg1 }
+      } = res1;
+      if (status1 === 200) {
+        this.roles = data1;
+      } else {
+        this.$message.warning(msg);
+        return;
+      }
+
+      const res2 = await this.$http.get('users/' + user.id);
+        const {data: data2,
+        meta: { status: status2, msg: msg2 }
+      } = res2;
+      if (status2 === 200) {
+        this.currentRoleId = data2.rid;
+      } else {
+        this.$message.warning(msg);
+        return;
+      }
+
+      this.showSelectRole = true;
+    },
+    async selectRole() {
+      const res = await this.$http.put('users/' + this.currentUser.id + '/role', {
+        rid: this.currentRoleId
+      });
+      const {
+        meta: { status, msg }
+      } = res;
+      if (status === 200) {
+        this.$message.success(msg);
+        this.showSelectRole = false;
       } else {
         this.$message.warning(msg);
       }
